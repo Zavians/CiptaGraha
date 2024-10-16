@@ -1,1 +1,9 @@
+#drop-area {
+    border: 2px dashed #007bff;
+    transition: background-color 0.3s;
+}
+
+#drop-area.hover {
+    background-color: #f8f9fa;
+}
 

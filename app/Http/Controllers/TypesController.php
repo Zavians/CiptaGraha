@@ -31,46 +31,55 @@ class TypesController extends Controller
                 'name' => $request->name
             ]);
 
-            return redirect()->route('indexTypes')->with('succes');
-        } catch (\Throwable $th) {
-            //throw $th;
+            return redirect()->route('indexTypes')->with('success', 'Types Add Succesfully');
+        } catch (\Throwable $e) {
+            Log::error($e->getMessage());
+
+            return redirect()->back()->with('error', 'Failed to update the data');
         }
     }
 
     public function update(Request $request, string $id)
     {
         // Validate the input
-        $validateData = $request->validate([
-            'name' => 'required|unique:categories,name,' . $id
+        $request->validate([
+            'name' => 'required|unique:types,name,' . $id,
         ]);
 
         try {
-            // Find the record by ID
-            $TypesData = TypesModel::findOrFail($id);
-
-
-            $TypesData->update([
+            // Find the record by ID and update it
+            $typeData = TypesModel::findOrFail($id);
+            $typeData->update([
                 'name' => $request->name,
             ]);
 
-
             return redirect()->route('indexTypes')->with('success', 'Data updated successfully');
         } catch (\Throwable $e) {
-
-            Log::info($e->getMessage());
+            // Log the error message for debugging
+            Log::error($e->getMessage());
 
             return redirect()->back()->with('error', 'Failed to update the data');
         }
     }
 
 
-    public function destroy(String $id) {
+
+
+
+    public function destroy(string $id)
+    {
+        // Find the type by ID
         $typesData = TypesModel::find($id);
 
+        // Check if the type exists
         if (!$typesData) {
-            return redirect()->back()->with('error', 'An error occurred while delete the Types');
+            return redirect()->back()->with('error', 'An error occurred while deleting the type.');
         }
+
+        // Delete the type
         $typesData->delete();
-        return redirect()->route('typesData')->with('success');
+
+        // Redirect with a success message
+        return redirect()->route('indexTypes')->with('success', 'Type deleted successfully.');
     }
 }
