@@ -34,12 +34,14 @@ Route::group(['middleware' => 'auth'], function () {
 		Route::put('/{id}', [TypesController::class, 'update'])->name('updateTypes');
 		Route::delete('/{id}', [TypesController::class, 'destroy'])->name('destroyTypes');
 	});
-	// Route::prefix('products')->group(function () {
-	// 	Route::get('/', [ProductsController::class, 'index'])->name('indexProducts');
-	// 	// Route::post('/', [ProductsController::class, 'store'])->name('storeProducts');
-	// 	Route::put('/{id}', [ProductsController::class, 'update'])->name('updateProducts');
-	// 	Route::delete('/{id}', [ProductsController::class, 'destroy'])->name('destroyProducts');
-	// });
+	Route::prefix('products')->group(function () {
+		Route::get('/', [ProductsController::class, 'index'])->name('indexProducts');
+		Route::get('/add', [ProductsController::class, 'addIndex'])->name('addIndexProducts');
+		Route::get('/edit/{id}', [ProductsController::class, 'editIndex'])->name('editIndexProducts');
+		Route::post('/', [ProductsController::class, 'store'])->name('storeProducts');
+		Route::put('/{id}', [ProductsController::class, 'update'])->name('updateProducts');
+		Route::delete('/{id}', [ProductsController::class, 'destroy'])->name('destroyProducts');
+	});
 
 	Route::get('dashboard', function () {
 		return view('dashboard');

@@ -13,4 +13,8 @@ class ProductsModel extends Model
     protected $table = 'products';
 
     protected $fillable = ['name','images','price'];
+
+    protected $casts = [
+        'images' => 'array', // This will automatically decode JSON strings to arrays
+    ];
 }
