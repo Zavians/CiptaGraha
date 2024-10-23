@@ -40,6 +40,7 @@ Route::group(['middleware' => 'auth'], function () {
 		Route::get('/edit/{id}', [ProductsController::class, 'editIndex'])->name('editIndexProducts');
 		Route::post('/', [ProductsController::class, 'store'])->name('storeProducts');
 		Route::put('/{id}', [ProductsController::class, 'update'])->name('updateProducts');
+		Route::post('/images/{id}', [ProductsController::class, 'uploadImages'])->name('uploadProductImages');
 		Route::delete('/{id}', [ProductsController::class, 'destroy'])->name('destroyProducts');
 	});
 

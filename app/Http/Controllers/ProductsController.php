@@ -36,8 +36,6 @@ class ProductsController extends Controller
         // Validate the request
         $validator = Validator::make($request->all(), [
             'name' => 'required|unique:products,name,' . $id,
-            'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:30720',
             'price' => 'required|numeric',
         ]);
 
@@ -57,25 +55,11 @@ class ProductsController extends Controller
             ];
 
             // Check if images are uploaded
-            if ($request->has('images')) {
-                $imagePaths = [];
-
-                // Loop through each image and upload it
-                foreach ($request->file('images') as $image) {
-                    if ($image->isValid()) { // Check if the image is valid
-                        $path = $image->store('images', 'public');
-                        $imagePaths[] = str_replace('/storage', 'storage', Storage::url($path));
-                    }
-                }
-
-                // Store the image paths as JSON
-                $dataProduct['images'] = json_encode($imagePaths);
-            }
-
             // Update the product
+            Log::info($dataProduct);
             $product->update($dataProduct);
 
-            return redirect()->route('indexProduct')->with('success', 'Product updated successfully');
+            return redirect()->route('indexProducts')->with('success', 'Product updated successfully');
         } catch (\Throwable $th) {
             return redirect()->back()->with('error', 'Failed to update product: ' . $th->getMessage())->withInput();
         }
@@ -91,8 +75,6 @@ class ProductsController extends Controller
         // Validate the request
         $validator = Validator::make($request->all(), [
             'name' => 'required|unique:products,name',
-            'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:30720',
             'price' => 'required|numeric',
         ]);
 
@@ -103,86 +85,123 @@ class ProductsController extends Controller
 
         try {
             // Prepare data for the product
+            $validatedData = $validator->validated();
             $dataProduct = [
-                'name' => $request->input('name'),  // Use input from the request
-                'price' => $request->input('price'), // Use input from the request
+                'name' => $validatedData['name'],
+                'price' => (int)$validatedData['price'],
             ];
 
-            // Check if images are uploaded
-            if ($request->has('images')) {
-                $imagePaths = [];
-
-                // Loop through each image and upload it
-                foreach ($request->file('images') as $image) {
-                    if ($image->isValid()) { // Check if the image is valid
-                        $path = $image->store('images', 'public');
-                        $imagePaths[] = str_replace('/storage', 'storage', Storage::url($path));
-                    }
-                }
-
-                // Store the image paths as JSON
-                $dataProduct['images'] = json_encode($imagePaths);
-            }
-
-            // Create the product
+            // Save product to the database
             ProductsModel::create($dataProduct);
-            return redirect()->route('indexProduct')->with('success', 'Product Add Succesfully');
+            return redirect()->route('indexProducts')->with('success', 'Product Added Successfully');
         } catch (\Throwable $th) {
+            Log::info($th);
             return redirect()->back()->with('error', 'Failed to save product: ' . $th->getMessage())->withInput();
         }
     }
 
+    public function uploadImages(Request $request, string $id)
+    {
+        // Validate the image upload
+        $validator = Validator::make($request->all(), [
+            'images' => 'required|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:30720',
+        ]);
+    
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+    
+        try {
+            // Find the product by ID
+            $product = ProductsModel::findOrFail($id);
+    
+            // Handle image uploads
+            $imagePaths = [];
+            foreach ($request->file('images') as $image) {
+                if ($image->isValid()) {
+                    $path = $image->store('images', 'public');
+                    $imagePaths[] = Storage::url($path);
+                }
+            }
+    
+            $product->images = json_encode($imagePaths);
+            $product->save();
+            Log::info($request->images);
+    
+            return response()->json(['success' => 'Images uploaded successfully!'], 200);
+        } catch (\Throwable $th) {
+            Log::error($th);
+            return response()->json(['error' => 'Failed to update images: ' . $th->getMessage()], 500);
+        }
+    }
+    
 
+    public function stores(Request $request)
+    {
+        // Define validation rules
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|unique:products,name',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:30720',
+            'price' => 'required|numeric',
+        ]);
 
+        // Handle validation errors
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
-    // public function stores(Request $request)
-    // {
-    //     // Define validation rules
-    //     $validator = Validator::make($request->all(), [
-    //         'name' => 'required|unique:products,name',
-    //         'images' => 'nullable|array',
-    //         'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:30720',
-    //         'price' => 'required|numeric',
-    //     ]);
+        try {
+            // Collect validated data
+            $validatedData = $validator->validated();
+            $dataProduct = [
+                'name' => $validatedData['name'],
+                'price' => $validatedData['price'],
+            ];
 
-    //     // Handle validation errors
-    //     if ($validator->fails()) {
-    //         return response()->json(['errors' => $validator->errors()], 422);
-    //     }
+            // Handle image uploads if any
+            if (isset($validatedData['images'])) {
+                $imagePaths = [];
+                foreach ($validatedData['images'] as $image) {
+                    if ($image->isValid()) {
+                        $path = $image->store('images', 'public');
+                        $imagePaths[] = Storage::url($path);
+                    }
+                }
+                $dataProduct['images'] = json_encode($imagePaths);
+            }
 
-    //     try {
-    //         // Collect validated data
-    //         $validatedData = $validator->validated();
-    //         $dataProduct = [
-    //             'name' => $validatedData['name'],
-    //             'price' => $validatedData['price'],
-    //         ];
+            // Save product to the database
+            $product = ProductsModel::create($dataProduct);
 
-    //         // Handle image uploads if any
-    //         if (isset($validatedData['images'])) {
-    //             $imagePaths = [];
-    //             foreach ($validatedData['images'] as $image) {
-    //                 if ($image->isValid()) {
-    //                     $path = $image->store('images', 'public');
-    //                     $imagePaths[] = Storage::url($path);
-    //                 }
-    //             }
-    //             $dataProduct['images'] = json_encode($imagePaths);
-    //         }
+            return response()->json([
+                'success' => true,
+                'message' => 'Product created successfully!',
+                'data' => $product,
+            ], 201);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save product: ' . $th->getMessage(),
+            ], 500);
+        }
+    }
 
-    //         // Save product to the database
-    //         $product = ProductsModel::create($dataProduct);
+    public function destroy(string $id)
+    {
+        // Find the type by ID
+        $productData = ProductsModel::find($id);
 
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Product created successfully!',
-    //             'data' => $product,
-    //         ], 201);
-    //     } catch (\Throwable $th) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Failed to save product: ' . $th->getMessage(),
-    //         ], 500);
-    //     }
-    // }
+        // Check if the type exists
+        if (!$productData) {
+            return redirect()->back()->with('error', 'An error occurred while deleting the type.');
+        }
+
+        // Delete the type
+        $productData->delete();
+
+        // Redirect with a success message
+        return redirect()->route('indexProducts')->with('success', 'Product Deleted Successfully');
+    }
 }
