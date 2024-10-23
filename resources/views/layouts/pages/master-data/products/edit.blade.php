@@ -16,6 +16,8 @@
             <div id="uploadAlert" class="alert alert-success d-none" role="alert">
             </div>
 
+            
+
             <form action="{{ route('uploadProductImages', $editProducts->id) }}" method="POST"
                 enctype="multipart/form-data">
                 @csrf
